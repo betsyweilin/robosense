@@ -1,13 +1,4 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package rslidar
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Change history
+==============
 
-1.0.2 (2019-03-25)
-------------------
-
-1.0.1 (2019-03-22)
-------------------
-* Updated maintainer for this fork
-* Fixed CMake, packages and Launch files
-* rslidar mutil node version 1.0.0
-* Contributors: Tony Zhang, amc-nu
+1.0.0 (2017-06-22): first release for mutil node version

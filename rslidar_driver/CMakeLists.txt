@@ -47,5 +47,3 @@ catkin_package(
 
 add_subdirectory(src)
 
-install(FILES nodelet_rslidar.xml
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

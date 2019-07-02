@@ -3,44 +3,9 @@
  *  Copyright (C) 2009, 2010, 2012 Austin Robot Technology, Jack O'Quin
  *	Copyright (C) 2017 Robosense, Tony Zhang
  *
+ *  License: Modified BSD Software License Agreement
  *
-
- Copyright (C) 2010-2013 Austin Robot Technology, and others
- All rights reserved.
-
-
-Modified BSD License:
---------------------
-
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions
-  are met:
-
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the following
-      disclaimer in the documentation and/or other materials provided
-      with the distribution.
-
-    * Neither the names of the University of Texas at Austin, nor
-      Austin Robot Technology, nor the names of other contributors may
-      be used to endorse or promote products derived from this
-      software without specific prior written permission.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
+ *  $Id$
  */
 
 /**
@@ -73,11 +38,6 @@ void RawData::loadConfigFile(ros::NodeHandle node, ros::NodeHandle private_nh)
   private_nh.param("channel_path", channelPath, std::string(""));
   private_nh.param("curves_rate_path", curvesRatePath, std::string(""));
 
-  private_nh.param("max_distance", max_distance, 200.0f);
-  private_nh.param("min_distance", min_distance, 0.2f);
-
-  ROS_INFO_STREAM("distance threshlod, max: " << max_distance << ", min: " << min_distance);
-
   private_nh.param("model", model, std::string("RS16"));
   if (model == "RS16")
   {
@@ -105,7 +65,7 @@ void RawData::loadConfigFile(ros::NodeHandle node, ros::NodeHandle private_nh)
   {
     fseek(f_inten, 0, SEEK_END);  //定位到文件末
     int size = ftell(f_inten);    //文件长度
-
+    ROS_INFO_STREAM("size is::::::::::::::::::::::::::::: " << size);
     if (size > 10000)  //老版的curve
     {
       Curvesis_new = false;
@@ -238,10 +198,6 @@ void RawData::loadConfigFile(ros::NodeHandle node, ros::NodeHandle private_nh)
     if (!f_curvesRate)
     {
       ROS_ERROR_STREAM("curves_path: '" << curvesRatePath << "' does not exist");
-      for (int i = 0; i < 32; ++i)
-      {
-        CurvesRate[i] = 1.0;
-      }
     }
     else
     {
@@ -341,6 +297,10 @@ void RawData::processDifop(const rslidar_msgs::rslidarPacket::ConstPtr& difop_ms
           bit1 = static_cast<int>(*(data + 50 + loopn * 15 + 12));
           bit2 = static_cast<int>(*(data + 50 + loopn * 15 + 13));
           aIntensityCal[6][loopn] = (bit1 * 256 + bit2) * 0.001;
+          // std::cout << aIntensityCal[0][loopn] << "\t" << aIntensityCal[1][loopn] << "\t" << aIntensityCal[2][loopn]
+          //         << "\t" << aIntensityCal[3][loopn] << "\t" << aIntensityCal[4][loopn] << "\t"
+          //          << aIntensityCal[5][loopn] << "\t" << aIntensityCal[6][loopn] << std::endl;
+          ;
         }
         this->is_init_curve_ = true;
         std::cout << "this->is_init_curve_ = "
@@ -461,33 +421,16 @@ float RawData::calibrateIntensity(float intensity, int calIdx, int distance)
   realPwr = std::max((float)(intensity / (1 + (temp - TEMPERATURE_MIN) / 24.0f)), 1.0f);
   // realPwr = intensity;
 
-  if (intensity_mode_ == 1)
-  {
-    // transform the one byte intensity value to two byte
-    if ((int)realPwr < 126)
-      realPwr = realPwr * 4.0f;
-    else if ((int)realPwr >= 126 && (int)realPwr < 226)
-      realPwr = (realPwr - 125.0f) * 16.0f + 500.0f;
-    else
-      realPwr = (realPwr - 225.0f) * 256.0f + 2100.0f;
-  }
-  else if (intensity_mode_ == 2)
-  {
-    // the caculation for the firmware after T6R23V8(16) and T9R23V6(32)
-    if ((int)realPwr < 64)
-      realPwr = realPwr;
-    else if ((int)realPwr >= 64 && (int)realPwr < 176)
-      realPwr = (realPwr - 64.0f) * 4.0f + 64.0f;
-    else
-      realPwr = (realPwr - 176.0f) * 16.0f + 512.0f;
-  }
+  // transform the one byte intensity value to two byte
+  if ((int)realPwr < 126)
+    realPwr = realPwr * 4.0f;
+  else if ((int)realPwr >= 126 && (int)realPwr < 226)
+    realPwr = (realPwr - 125.0f) * 16.0f + 500.0f;
   else
-  {
-    std::cout << "The intensity mode is not right" << std::endl;
-  }
+    realPwr = (realPwr - 225.0f) * 256.0f + 2100.0f;
 
   int indexTemper = estimateTemperature(temper) - TEMPERATURE_MIN;
-  uplimitDist = g_ChannelNum[calIdx][indexTemper] + DISTANCE_MAX_UNITS;
+  uplimitDist = g_ChannelNum[calIdx][indexTemper] + 20000;
   // limit sDist
   sDist = (distance > g_ChannelNum[calIdx][indexTemper]) ? distance : g_ChannelNum[calIdx][indexTemper];
   sDist = (sDist < uplimitDist) ? sDist : uplimitDist;
@@ -497,71 +440,27 @@ float RawData::calibrateIntensity(float intensity, int calIdx, int distance)
   // calculate intensity ref curves
   float refPwr_temp = 0.0f;
   int order = 3;
-  endOfSection1 = 5.0f;
-  endOfSection2 = 40.0;
-
-  if (dis_resolution_mode == 0)
+  endOfSection1 = 500.0f;
+  distance_f = (float)algDist;
+  if (distance_f <= endOfSection1)
   {
-    distance_f = (float)algDist * DISTANCE_RESOLUTION_NEW;
+    refPwr_temp =
+        aIntensityCal[0][calIdx] * exp(aIntensityCal[1][calIdx] - aIntensityCal[2][calIdx] * distance_f / 100.0f) +
+        aIntensityCal[3][calIdx];
+    //   printf("a-calIdx=%d,distance_f=%f,refPwr=%f\n",calIdx,distance_f,refPwr_temp);
   }
   else
   {
-    distance_f = (float)algDist * DISTANCE_RESOLUTION;
-  }
-
-  if (intensity_mode_ == 1)
-  {
-    if (distance_f <= endOfSection1)
+    for (int i = 0; i < order; i++)
     {
-      refPwr_temp = aIntensityCal[0][calIdx] * exp(aIntensityCal[1][calIdx] - aIntensityCal[2][calIdx] * distance_f) +
-                    aIntensityCal[3][calIdx];
-      //   printf("a-calIdx=%d,distance_f=%f,refPwr=%f\n",calIdx,distance_f,refPwr_temp);
+      refPwr_temp += aIntensityCal[i + 4][calIdx] * (pow(distance_f / 100.0f, order - 1 - i));
     }
-    else
-    {
-      for (int i = 0; i < order; i++)
-      {
-        refPwr_temp += aIntensityCal[i + 4][calIdx] * (pow(distance_f, order - 1 - i));
-      }
-      // printf("b-calIdx=%d,distance_f=%f,refPwr=%f\n",calIdx,distance_f,refPwr_temp);
-    }
-  }
-  else if (intensity_mode_ == 2)
-  {
-    if (distance_f <= endOfSection1)
-    {
-      refPwr_temp = aIntensityCal[0][calIdx] * exp(aIntensityCal[1][calIdx] - aIntensityCal[2][calIdx] * distance_f) +
-                    aIntensityCal[3][calIdx];
-      //   printf("a-calIdx=%d,distance_f=%f,refPwr=%f\n",calIdx,distance_f,refPwr_temp);
-    }
-    else if (distance_f > endOfSection1 && distance_f <= endOfSection2)
-    {
-      for (int i = 0; i < order; i++)
-      {
-        refPwr_temp += aIntensityCal[i + 4][calIdx] * (pow(distance_f, order - 1 - i));
-      }
-      // printf("b-calIdx=%d,distance_f=%f,refPwr=%f\n",calIdx,distance_f,refPwr_temp);
-    }
-    else
-    {
-      float refPwr_temp0 = 0.0f;
-      float refPwr_temp1 = 0.0f;
-      for (int i = 0; i < order; i++)
-      {
-        refPwr_temp0 += aIntensityCal[i + 4][calIdx] * (pow(40.0f, order - 1 - i));
-        refPwr_temp1 += aIntensityCal[i + 4][calIdx] * (pow(39.0f, order - 1 - i));
-      }
-      refPwr_temp = 0.3f * (refPwr_temp0 - refPwr_temp1) * distance_f + refPwr_temp0;
-    }
-  }
-  else
-  {
-    std::cout << "Invalid intensity mode selected" << std::endl;
+    // printf("b-calIdx=%d,distance_f=%f,refPwr=%f\n",calIdx,distance_f,refPwr_temp);
   }
 
   refPwr = std::max(std::min(refPwr_temp, 500.0f), 4.0f);
 
-  tempInten = (intensityFactor * refPwr) / realPwr;
+  tempInten = (51 * refPwr) / realPwr;
   if (numOfLasers == 32)
   {
     tempInten = tempInten * CurvesRate[calIdx];
@@ -750,20 +649,13 @@ void RawData::unpack(const rslidar_msgs::rslidarPacket& pkt, pcl::PointCloud<pcl
           intensity = calibrateIntensity_old(intensity, dsr, distance);
 
         float distance2 = pixelToDistance(distance, dsr);
-        if (dis_resolution_mode == 0)  // distance resolution is 0.5cm
-        {
-          distance2 = distance2 * DISTANCE_RESOLUTION_NEW;
-        }
-        else
-        {
-          distance2 = distance2 * DISTANCE_RESOLUTION;
-        }
+        distance2 = distance2 * DISTANCE_RESOLUTION;
 
         float arg_horiz = (float)azimuth_corrected / 18000.0f * M_PI;
         float arg_vert = VERT_ANGLE[dsr];
         pcl::PointXYZI point;
 
-        if (distance2 > max_distance || distance2 < min_distance)  // invalid distance
+        if (distance2 > DISTANCE_MAX || distance2 < DISTANCE_MIN)  // invalid data
         {
           point.x = NAN;
           point.y = NAN;
@@ -879,7 +771,7 @@ void RawData::unpack_RS32(const rslidar_msgs::rslidarPacket& pkt, pcl::PointClou
         float arg_vert = VERT_ANGLE[dsr];
         pcl::PointXYZI point;
 
-        if (distance2 > max_distance || distance2 < min_distance)  // invalid distance
+        if (distance2 > DISTANCE_MAX || distance2 < DISTANCE_MIN)  // invalid data
         {
           point.x = NAN;
           point.y = NAN;
@@ -956,7 +848,7 @@ void RawData::unpack_RS32(const rslidar_msgs::rslidarPacket& pkt, pcl::PointClou
         float arg_vert = VERT_ANGLE[dsr];
         pcl::PointXYZI point;
 
-        if (distance2 > max_distance || distance2 < min_distance)  // invalid distance
+        if (distance2 > DISTANCE_MAX || distance2 < DISTANCE_MIN)  // invalid data
         {
           point.x = NAN;
           point.y = NAN;

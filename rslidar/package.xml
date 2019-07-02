@@ -1,12 +1,11 @@
 <package>
 
     <name>rslidar</name>
-    <version>1.0.2</version>
+    <version>1.0.0</version>
     <description>
         Basic ROS support for the Robosense 3D LIDARs.
     </description>
-    <maintainer email="abrahammonrroy@yahoo.com">Abraham Monrroy</maintainer>
-    <author email="tony.zhang@robosense.cn">Tony Zhang</author>
+    <maintainer email="tony.zhang@robosense.cn">Tony Zhang</maintainer>
     <author>Tony Zhang</author>
     <license>BSD</license>
 

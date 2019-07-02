@@ -1,0 +1,83 @@
+<launch>
+    <arg name="model" default="RS16"/>
+    <arg name="model32" default="RS32"/>
+    <arg name="device_ip" default="192.168.1.100"/>
+    <arg name="msop_port" default="6699"/>
+    <arg name="difop_port" default="7788"/>
+
+    <arg name="device_ip_200" default="192.168.1.200"/>
+    <arg name="msop_port_200" default="1122"/>
+    <arg name="difop_port_200" default="3344"/>
+
+    <arg name="device_ip_232" default="192.168.1.232"/>
+    <arg name="msop_port_232" default="5566"/>
+    <arg name="difop_port_232" default="8899"/>
+
+    <arg name="topicname_100" default="rslidar1"/>
+    <arg name="topicname_200" default="rslidar2"/>
+    <arg name="topicname_232" default="points_raw"/>
+
+    <arg name="lidar_param_path_100" default="$(find rslidar_pointcloud)/data/rs_lidar_16_100/"/>
+    <arg name="lidar_param_path_200" default="$(find rslidar_pointcloud)/data/rs_lidar_16_200/"/>
+    <arg name="lidar_param_path_232" default="$(find rslidar_pointcloud)/data/rs_lidar_32_232/"/>
+    <group ns="ns0">
+	    <node name="rslidar_node_232" pkg="rslidar_driver" type="rslidar_node" output="screen">
+		<param name="model" value="$(arg model32)"/>
+		<param name="device_ip" value="$(arg device_ip_232)"/>
+		<param name="msop_port" value="$(arg msop_port_232)"/>
+		<param name="difop_port" value="$(arg difop_port_232)"/>
+		<!--param name="pcap" value="path_to_pcap"/-->
+	    </node>
+
+	    <node name="rscloud_node_232" pkg="rslidar_pointcloud" type="rscloud_node" output="screen">
+		<param name="model" value="$(arg model)"/>
+		<param name="curves_path" value="$(arg lidar_param_path_232)/curves.csv"/>
+		<param name="angle_path" value="$(arg lidar_param_path_232)/angle.csv"/>
+		<param name="channel_path" value="$(arg lidar_param_path_232)/ChannelNum.csv"/>
+	        <param name="topic_name" value="$(arg topicname_232)"/>
+	        <param name="curves_rate_path" value="$(arg lidar_param_path_232)/CurveRate.csv"/>
+	        <param name="intensity_mode" value="1" />
+	    </node>
+    </group>
+    <group ns="ns1">
+	    <node name="rslidar_node_100" pkg="rslidar_driver" type="rslidar_node" output="screen">
+		<param name="model" value="$(arg model)"/>
+		<param name="device_ip" value="$(arg device_ip)"/>
+		<param name="msop_port" value="$(arg msop_port)"/>
+		<param name="difop_port" value="$(arg difop_port)"/>
+		 
+		<!--param name="pcap" value="path_to_pcap"/-->
+	    </node>
+
+	    <node name="rscloud_node_100" pkg="rslidar_pointcloud" type="rscloud_node" output="screen">
+		<param name="model" value="$(arg model)"/>
+		<param name="curves_path" value="$(arg lidar_param_path_100)/curves.csv"/>
+		<param name="angle_path" value="$(arg lidar_param_path_100)/angle.csv"/>
+		<param name="channel_path" value="$(arg lidar_param_path_100)/ChannelNum.csv"/>
+	        <param name="topic_name" value="$(arg topicname_100)"/>
+	    </node>
+    </group>
+    <group ns="ns2">
+	    <node name="rslidar_node_200" pkg="rslidar_driver" type="rslidar_node" output="screen">
+		<param name="model" value="$(arg model)"/>
+		<param name="device_ip" value="$(arg device_ip_200)"/>
+		<param name="msop_port" value="$(arg msop_port_200)"/>
+		<param name="difop_port" value="$(arg difop_port_200)"/>
+		 
+		<!--param name="pcap" value="path_to_pcap"/-->
+	    </node>
+
+	    <node name="rscloud_node_200" pkg="rslidar_pointcloud" type="rscloud_node" output="screen">
+		<param name="model" value="$(arg model)"/>
+		<param name="curves_path" value="$(arg lidar_param_path_200)/curves.csv"/>
+		<param name="angle_path" value="$(arg lidar_param_path_200)/angle.csv"/>
+		<param name="channel_path" value="$(arg lidar_param_path_200)/ChannelNum.csv"/>
+	        <param name="topic_name" value="$(arg topicname_200)"/>
+	    </node>
+    </group>
+
+
+
+    <!-- node name="rviz_1" pkg="rviz" type="rviz" args="-d $(find rslidar_pointcloud)/rviz_cfg/rslidar.rviz"/ -->
+
+</launch>
